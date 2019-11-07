@@ -326,21 +326,21 @@ contract ChampionCards is AccessControl, ERC721 , CheckERC165 , ERC721Metadata  
     uint32 private futureRandCommit = 1; 
     uint16 private pCommit = 1; 
     
-    uint256 public constant uncommonMax = 165000; 
+    uint256 public constant uncommonMax = 65000; 
     uint256 public constant rareMax = 75000; 
     uint256 public constant epicMax = 35000;    
     uint256 public constant mythicMax = 19000;
     uint256 public constant legendaryMax = 5500;
     uint256 public constant shinyMax = 4;
-    uint maxSupply = 310000; // total number of ERC-721 tokens must not exceed 
+    uint maxSupply = 210000; // total number of ERC-721 tokens must not exceed 
     uint256 public constant promoMax = 15000; // max amount of cards for promo
     uint8 referPercent = 15; 
     
-    uint private uncommonPackPrice = 0.03 ether; 
-    uint private rarePackPrice = 0.03 ether; 
-    uint private epicPackPrice = 0.09 ether; 
-    uint private mythicPackPrice = 0.3 ether; 
-    uint private shinyPackPrice = 1 ether;
+    uint private uncommonPackPrice = 30000000000000000; 
+    uint private rarePackPrice = 30000000000000000; 
+    uint private epicPackPrice = 90000000000000000; 
+    uint private mythicPackPrice = 300000000000000000; 
+    uint private shinyPackPrice = 1000000000000000000;
     
     bytes4 private constant Interface_ERC721 = 0x80ac58cd;
     bytes4 private constant Interface_ERC721Metadata = 0x5b5e139f;
@@ -383,11 +383,12 @@ contract ChampionCards is AccessControl, ERC721 , CheckERC165 , ERC721Metadata  
 
     }
     
-
+    // Metadata base URI is adjustable as needed 
     function changeBaseURI(string _newBaseURI) public onlyCEO whenNotPaused{
         tokenBaseURI = _newBaseURI;
     }
     
+    // Refer percentage is adjustable only by the publisher of the contract 
     function changeReferPercent(uint8 _newPercent ) public onlyCEO whenNotPaused{
         require ( _newPercent > 3 && _newPercent < 36 );  
         referPercent = _newPercent;
@@ -445,7 +446,7 @@ contract ChampionCards is AccessControl, ERC721 , CheckERC165 , ERC721Metadata  
         }
     }
     
-    
+    // return all packs owned by an address 
     function packsOf(address _owner) public view returns(uint256[]) {
         
         uint256 packCount = packCountOf(_owner);
@@ -468,11 +469,13 @@ contract ChampionCards is AccessControl, ERC721 , CheckERC165 , ERC721Metadata  
         
     }
 
+    // use numbers unable to be manipulated by end user 
     function random( uint64 _bnumber ) private view returns (uint) {
         return uint(keccak256(abi.encodePacked( futureRandCommit , pCommit , _bnumber , cards.length , packs.length ,
         uncommonSeq , rareSeq )));
     }
     
+    // use numbers unable to be manipulated by end user 
     function randomShort( uint64 _bnumber , uint _varCount ) private view returns (uint) {
         
         uint _thisVarCount = _varCount + 4; 
@@ -481,6 +484,7 @@ contract ChampionCards is AccessControl, ERC721 , CheckERC165 , ERC721Metadata  
         return _random;
     }
 
+    // determine rarity token 
     function getRarity( uint8 _packType , uint _rand ) internal view returns( uint8 ){ 
         
             uint8 _rarity; 
@@ -566,7 +570,7 @@ contract ChampionCards is AccessControl, ERC721 , CheckERC165 , ERC721Metadata  
     }
     
     
-    
+    // Mint a promo pack ( so long as promo packs are available within limit )
     function promoPack( uint8 _packType , address _to ) public onlyCEO whenNotPaused {
         
         require(msg.sender != address(0));
@@ -617,7 +621,10 @@ contract ChampionCards is AccessControl, ERC721 , CheckERC165 , ERC721Metadata  
         ); 
     }
     
-
+    // Main function for acquiring a card pack 
+    // Only cards selected as uncommon and above rarity will be minted to save gas 
+    // If refered pass a value to referrer 
+    // Run through security checks and store block commited 
     function purchasePack( uint8 _packType , uint16 _packCount , address _referer ) public payable whenNotPaused {
         
         require(msg.sender != address(0));
@@ -706,7 +713,8 @@ contract ChampionCards is AccessControl, ERC721 , CheckERC165 , ERC721Metadata  
         return _seq; 
     }                
     
-    
+    // Gets the next rarity available in case rarity levels reach cap 
+    // 
     function getPackRarity( uint8 _packType ) private view returns( uint8 ){
         
         uint8 _rarity; 
@@ -728,7 +736,9 @@ contract ChampionCards is AccessControl, ERC721 , CheckERC165 , ERC721Metadata  
         return _rarity; 
     }
     
-    
+    // opens the pack of cards and mints uncommons and above 
+    // transfer ownership of each minted card 
+    // return a callback to subscribed unbox received function
     function unpackCards( uint16 _packCount , uint8 _packType , address _to , uint64 _commit , uint _curSupply ) private whenNotPaused {
         
         for( uint8 i = 0; i < _packCount; i++ ){
